@@ -22,6 +22,14 @@ function initDatabase() {
     `);
     insertAdmin.run(config.adminUsername, passwordHash, 'System Administrator');
     console.log(`[Database] Default administrator created: "${config.adminUsername}"`);
+  } else if (process.env.ADMIN_PASSWORD) {
+    // ADMIN_PASSWORD is set explicitly (e.g. Railway Variables): keep the stored password in sync,
+    // so the admin password can be changed later by editing the variable.
+    const row = db.prepare('SELECT id, password_hash FROM admins WHERE username = ?').get(config.adminUsername);
+    if (!bcrypt.compareSync(config.adminPassword, row.password_hash)) {
+      db.prepare('UPDATE admins SET password_hash = ? WHERE id = ?').run(bcrypt.hashSync(config.adminPassword, 10), row.id);
+      console.log(`[Database] Password for administrator "${config.adminUsername}" updated from ADMIN_PASSWORD.`);
+    }
   }
 
   // Seed default categories if none exist

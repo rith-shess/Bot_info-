@@ -374,6 +374,32 @@ telegram-bot/
 
 ---
 
+## 🚂 Deploy on Railway
+
+1. **New Project → Deploy from GitHub repo** and pick this repository.
+2. **Add a Volume** (right-click the project canvas, or press `Ctrl/Cmd + K` → *Volume*), attach it to the service and set the mount path to `/data`.
+   Without a volume the database and uploads are deleted on every redeploy. The app uses the volume automatically (it reads `RAILWAY_VOLUME_MOUNT_PATH`).
+   The Free plan volume is 0.5GB, the Hobby plan 5GB.
+3. Open the service **Variables** tab and add (type them in, do not import `.env.example`):
+
+   | Variable | Value |
+   |----------|-------|
+   | `BOT_TOKEN` | token from @BotFather |
+   | `ADMIN_USERNAME` | `admin` (or your own) |
+   | `ADMIN_PASSWORD` | a strong password (changing it later and redeploying updates the admin login) |
+   | `SESSION_SECRET` | a long random string |
+   | `NODE_ENV` | `production` |
+
+   `BASE_URL` is optional: on Railway the public address is detected automatically.
+4. **Settings → Networking → Generate Domain**, then open that address and log in to the dashboard.
+5. Check the deploy logs for `[Storage] Persistent storage: /data` and `[Telegram] Bot started successfully`.
+
+Notes
+- Only **one** copy of the bot can run per token. Stop the bot on your own computer (or use a second token for testing) once Railway is running it.
+- Railway closes an upload that takes longer than about 5 minutes, so very large videos need a fast connection. Videos under ~49MB also play directly inside Telegram.
+
+---
+
 ## 🎬 Product Videos
 
 In the dashboard, **Add/Edit Product** has a *Product Videos* section: MP4 (recommended), MOV or WEBM, **up to 1GB each, 3 videos per upload**, with a live upload progress bar. The limit can be changed with `MAX_VIDEO_MB` in `.env`.

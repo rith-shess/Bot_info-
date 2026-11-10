@@ -11,7 +11,17 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 // Initialize database tables, indexes, and default administrator
 initDatabase();
 
+if (config.storage.persistent) {
+  console.log(`[Storage] Persistent storage: ${config.storage.root}`);
+} else if (config.storage.isRailway) {
+  console.warn('[Storage] WARNING: no Railway Volume is attached. The database and uploads will be DELETED on every redeploy. Add a Volume (mount path /data).');
+}
+
 const app = express();
+
+// Railway (and most hosts) put a HTTPS proxy in front of the app. Without this the secure
+// login cookie is never set and every visitor looks like the same IP to the rate limiter.
+app.set('trust proxy', 1);
 
 // Security middleware
 app.use(helmet({
