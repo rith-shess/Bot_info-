@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Telegram Catalog</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/public/css/dashboard.css">
+</head>
+<body>
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Main Layout -->
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <i class="fa-brands fa-telegram brand-icon"></i>
+          <div class="brand-text">
+            <h2>TeleCatalog</h2>
+            <span>Admin Dashboard</span>
+          </div>
+        </div>
+        <button id="closeSidebarBtn" class="mobile-close-btn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <ul>
+          <li>
+            <button class="nav-item active" data-tab="overview">
+              <i class="fa-solid fa-chart-pie"></i>
+              <span>Overview</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-tab="products">
+              <i class="fa-solid fa-box-archive"></i>
+              <span>Products</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-tab="categories">
+              <i class="fa-solid fa-folder-tree"></i>
+              <span>Categories</span>
+            </button>
+          </li>
+          <li>
+            <button class="nav-item" data-tab="settings">
+              <i class="fa-solid fa-gear"></i>
+              <span>Settings</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="bot-badge" id="botStatusBadge">
+          <span class="status-indicator-dot" id="sidebarDot"></span>
+          <span id="sidebarBotText">Bot: Checking...</span>
+        </div>
+        <div class="user-info">
+          <div class="user-avatar">
+            <i class="fa-solid fa-user-shield"></i>
+          </div>
+          <div class="user-details">
+            <span class="user-name" id="adminUserName">Admin</span>
+            <span class="user-role">Administrator</span>
+          </div>
+          <button id="logoutBtn" class="logout-btn" title="Sign Out">
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <!-- Top Navbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="mobileMenuBtn" class="mobile-menu-btn">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <h1 id="pageTitle" class="page-title">Dashboard Overview</h1>
+        </div>
+        <div class="topbar-right">
+          <div class="bot-quick-status" id="topbarBotStatus">
+            <!-- Injected by JS -->
+          </div>
+          <button class="btn btn-primary" id="topbarAddBtn">
+            <i class="fa-solid fa-plus"></i>
+            <span>Add Product</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Body Tabs -->
+      <main class="content-body">
+        
+        <!-- TAB 1: OVERVIEW -->
+        <section id="tab-overview" class="tab-pane active">
+          <!-- Metrics Cards -->
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-icon bg-blue">
+                <i class="fa-solid fa-boxes-stacked"></i>
+              </div>
+              <div class="metric-data">
+                <span class="metric-label">Total Products</span>
+                <h3 id="statTotalProducts" class="metric-val">-</h3>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon bg-green">
+                <i class="fa-solid fa-circle-check"></i>
+              </div>
+              <div class="metric-data">
+                <span class="metric-label">Active Products</span>
+                <h3 id="statActiveProducts" class="metric-val">-</h3>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon bg-red">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+              </div>
+              <div class="metric-data">
+                <span class="metric-label">Out of Stock</span>
+                <h3 id="statOutOfStock" class="metric-val">-</h3>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon bg-purple">
+                <i class="fa-solid fa-tags"></i>
+              </div>
+              <div class="metric-data">
+                <span class="metric-label">Categories</span>
+                <h3 id="statTotalCategories" class="metric-val">-</h3>
+              </div>
+            </div>
+          </div>
+
+          <!-- Telegram Bot Connection Status Banner -->
+          <div class="card bot-status-card mb-4" id="botStatusCard">
+            <div class="bot-status-header">
+              <div class="bot-status-title">
+                <i class="fa-brands fa-telegram"></i>
+                <h3>Telegram Bot Status</h3>
+              </div>
+              <span id="botStateBadge" class="badge badge-warning">Checking...</span>
+            </div>
+            <div class="bot-status-details" id="botStatusDetails">
+              Loading bot connection information...
+            </div>
+          </div>
+
+          <!-- Recently Added Products Table -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <h3>Recently Added Products</h3>
+              </div>
+              <button class="btn btn-sm btn-outline" onclick="dashboard.switchTab('products')">View All</button>
+            </div>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Image</th>
+                    <th>SKU</th>
+                    <th>Name (EN / KM)</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="recentProductsTableBody">
+                  <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">Loading recent products...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 2: PRODUCTS MANAGEMENT -->
+        <section id="tab-products" class="tab-pane">
+          <div class="card">
+            <!-- Filter & Search Controls -->
+            <div class="table-controls">
+              <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="productSearchInput" placeholder="Search by name, SKU, description...">
+                <button id="clearSearchBtn" class="clear-btn" style="display:none;"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+
+              <div class="filters-group">
+                <select id="filterCategory" class="form-select">
+                  <option value="">All Categories</option>
+                </select>
+
+                <select id="filterStock" class="form-select">
+                  <option value="">All Stock Status</option>
+                  <option value="in_stock">In Stock</option>
+                  <option value="low_stock">Low Stock</option>
+                  <option value="out_of_stock">Out of Stock</option>
+                </select>
+
+                <select id="filterActive" class="form-select">
+                  <option value="">All Active Status</option>
+                  <option value="1">Active Only</option>
+                  <option value="0">Inactive Only</option>
+                </select>
+
+                <button class="btn btn-primary" id="openAddProductModalBtn">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>Add Product</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Products Data Table -->
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Thumbnail</th>
+                    <th>SKU</th>
+                    <th>Product Name (EN / KM)</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock Status</th>
+                    <th>Active</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="productsTableBody">
+                  <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">Loading products...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination-footer" id="productsPagination">
+              <span class="pagination-info" id="paginationInfo">Showing 0 of 0</span>
+              <div class="pagination-buttons" id="paginationControls"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 3: CATEGORIES MANAGEMENT -->
+        <section id="tab-categories" class="tab-pane">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-folder-tree"></i>
+                <h3>Product Categories</h3>
+              </div>
+              <button class="btn btn-primary" id="openAddCategoryModalBtn">
+                <i class="fa-solid fa-plus"></i>
+                <span>Add Category</span>
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Category (EN)</th>
+                    <th>Category (KM)</th>
+                    <th>Description (EN)</th>
+                    <th>Description (KM)</th>
+                    <th>Products Count</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="categoriesTableBody">
+                  <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">Loading categories...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- TAB 4: STORE & CONTACT SETTINGS -->
+        <section id="tab-settings" class="tab-pane">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-sliders"></i>
+                <h3>Store & Contact Information</h3>
+              </div>
+            </div>
+
+            <form id="settingsForm" style="padding: 1.5rem;">
+              <p class="text-muted mb-4" style="font-size: 0.9rem;">
+                Manage your store contact details below. When customers ask the Telegram chatbot for contact info or send <code>/contact</code>, these details will be shown automatically!
+              </p>
+
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="setPhone">Phone Number(s) <span class="required">*</span></label>
+                  <input type="text" id="setPhone" name="contact_phone" placeholder="e.g. +855 12 345 678 / +855 98 765 432" required>
+                  <small class="text-muted">Separate multiple numbers with a slash ( / )</small>
+                </div>
+
+                <div class="form-group col-6">
+                  <label for="setTelegram">Telegram Admin Handle <span class="required">*</span></label>
+                  <input type="text" id="setTelegram" name="contact_telegram" placeholder="e.g. @YourUsername" required>
+                  <small class="text-muted">Include the @ symbol (e.g. @AdminSupport)</small>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="setSalesTelegram">Sales Account (Buy Now button)</label>
+                  <input type="text" id="setSalesTelegram" name="sales_telegram" placeholder="e.g. @Skybalsupport">
+                  <small class="text-muted">Customers who tap "Buy Now" are sent to this Telegram account</small>
+                </div>
+
+                <div class="form-group col-6">
+                  <label for="setSalesContact">Sales Contact (Contact Info screen)</label>
+                  <input type="text" id="setSalesContact" name="contact_sales" placeholder="e.g. @inforpos">
+                  <small class="text-muted">Shown as "Sales Contact" in the bot's Contact Info. Leave empty to hide.</small>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="setSalesChatId">Sales Chat ID (optional)</label>
+                  <input type="text" id="setSalesChatId" name="sales_chat_id" placeholder="Leave empty = automatic">
+                  <small class="text-muted">Buy Now requests (with product picture) are sent here. Empty = the sales account, after it presses /start in the bot. For a group, enter the group ID (e.g. -1001234567890) and add the bot to the group.</small>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="setAddressEn">Store Address (English)</label>
+                  <input type="text" id="setAddressEn" name="contact_address_en" placeholder="e.g. Street 2004, Phnom Penh, Cambodia">
+                </div>
+
+                <div class="form-group col-6">
+                  <label for="setAddressKm">Store Address (Khmer) <span class="khmer-label">អាសយដ្ឋានជាភាសាខ្មែរ</span></label>
+                  <input type="text" id="setAddressKm" name="contact_address_km" placeholder="e.g. ផ្លូវ ២០០៤ រាជធានីភ្នំពេញ">
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group col-6">
+                  <label for="setHoursEn">Working Hours (English)</label>
+                  <input type="text" id="setHoursEn" name="contact_hours_en" placeholder="e.g. Mon - Sat, 8:00 AM - 6:00 PM">
+                </div>
+
+                <div class="form-group col-6">
+                  <label for="setHoursKm">Working Hours (Khmer) <span class="khmer-label">ម៉ោងធ្វើការជាភាសាខ្មែរ</span></label>
+                  <input type="text" id="setHoursKm" name="contact_hours_km" placeholder="e.g. ច័ន្ទ - សៅរ៍, ម៉ោង 8:00 ព្រឹក - 6:00 ល្ងាច">
+                </div>
+              </div>
+
+              <div style="margin-top: 1.5rem;">
+                <button type="submit" class="btn btn-primary" id="saveSettingsBtn">
+                  <span class="btn-text"><i class="fa-solid fa-floppy-disk"></i> Save Settings</span>
+                  <span class="spinner" style="display:none;"><i class="fa-solid fa-circle-notch fa-spin"></i> Saving...</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT PRODUCT -->
+  <div id="productModal" class="modal-backdrop">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="productModalTitle">Add New Product</h3>
+          <button class="modal-close" onclick="dashboard.closeModal('productModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form id="productForm">
+          <input type="hidden" id="prodFormId">
+          <div class="modal-body">
+            
+            <!-- Basic Identifiers -->
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label for="prodSku">SKU / Product Code <span class="required">*</span></label>
+                <input type="text" id="prodSku" required placeholder="e.g. PRN-80MM-USB">
+              </div>
+              <div class="form-group col-6">
+                <label for="prodCategory">Category</label>
+                <select id="prodCategory">
+                  <option value="">-- Select Category --</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Names in EN and KM -->
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label for="prodNameEn">Product Name (English) <span class="required">*</span></label>
+                <input type="text" id="prodNameEn" required placeholder="e.g. 80mm Thermal Receipt Printer">
+              </div>
+              <div class="form-group col-6">
+                <label for="prodNameKm">Product Name (Khmer) <span class="khmer-label">ឈ្មោះជាភាសាខ្មែរ</span></label>
+                <input type="text" id="prodNameKm" placeholder="e.g. ម៉ាស៊ីនព្រីនវិក្កយបត្រកម្ដៅ 80mm">
+              </div>
+            </div>
+
+            <!-- Pricing and Currency and Status -->
+            <div class="form-row">
+              <div class="form-group col-4">
+                <label for="prodPrice">Price <span class="required">*</span></label>
+                <input type="number" step="0.01" min="0" id="prodPrice" required placeholder="0.00">
+              </div>
+              <div class="form-group col-4">
+                <label for="prodCurrency">Currency</label>
+                <select id="prodCurrency">
+                  <option value="USD">USD ($)</option>
+                  <option value="KHR">KHR (៛)</option>
+                </select>
+              </div>
+              <div class="form-group col-4">
+                <label for="prodStock">Stock Status</label>
+                <select id="prodStock">
+                  <option value="in_stock">In Stock (មានក្នុងស្តុក)</option>
+                  <option value="low_stock">Low Stock (ស្តុកនៅសល់តិច)</option>
+                  <option value="out_of_stock">Out of Stock (អស់ពីស្តុក)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Active Status Toggle -->
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="prodIsActive" checked>
+                <span>Make product active in Telegram Chatbot catalog</span>
+              </label>
+            </div>
+
+            <!-- Descriptions -->
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label for="prodDescEn">Description (English)</label>
+                <textarea id="prodDescEn" rows="3" placeholder="Brief summary of the product..."></textarea>
+              </div>
+              <div class="form-group col-6">
+                <label for="prodDescKm">Description (Khmer) <span class="khmer-label">ការពិពណ៌នាជាភាសាខ្មែរ</span></label>
+                <textarea id="prodDescKm" rows="3" placeholder="ព័ត៌មានសង្ខេបអំពីផលិតផល..."></textarea>
+              </div>
+            </div>
+
+            <!-- Specifications / Details -->
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label for="prodDetailsEn">Specifications & Details (English)</label>
+                <textarea id="prodDetailsEn" rows="4" placeholder="Speed: 260mm/s&#10;Interface: USB+LAN&#10;Power: 24V..."></textarea>
+              </div>
+              <div class="form-group col-6">
+                <label for="prodDetailsKm">Specifications & Details (Khmer) <span class="khmer-label">លក្ខណៈបច្ចេកទេស</span></label>
+                <textarea id="prodDetailsKm" rows="4" placeholder="ល្បឿន: 260mm/s&#10;រន្ធតភ្ជាប់: USB+LAN&#10;ថាមពល: 24V..."></textarea>
+              </div>
+            </div>
+
+            <!-- Images Section -->
+            <div class="form-group">
+              <label>Product Pictures (Multiple allowed - JPEG, PNG, WEBP)</label>
+              
+              <!-- Existing Images (When Editing) -->
+              <div id="existingImagesContainer" class="existing-images-grid" style="display:none;">
+                <label class="sub-label">Current Pictures (Click red trash to remove):</label>
+                <div id="existingImagesList" class="images-preview-flex"></div>
+              </div>
+
+              <!-- Upload Dropzone -->
+              <div class="upload-dropzone" id="uploadDropzone">
+                <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
+                <p>Drag & drop pictures here or <strong>browse files</strong></p>
+                <span class="dropzone-hint">Max 10 files, up to 5MB each</span>
+                <input type="file" id="prodImagesInput" multiple accept="image/jpeg,image/png,image/webp,image/gif" style="display:none;">
+              </div>
+
+              <!-- New Selected Files Preview -->
+              <div id="newImagesPreview" class="images-preview-flex mt-2"></div>
+            </div>
+
+            <div class="form-group">
+              <label>Product Videos (MP4, MOV, WEBM - up to 1GB each)</label>
+
+              <!-- Existing Videos (When Editing) -->
+              <div id="existingVideosContainer" class="existing-images-grid" style="display:none;">
+                <label class="sub-label">Current Videos (Click red trash to remove):</label>
+                <div id="existingVideosList" class="video-list"></div>
+              </div>
+
+              <!-- Video Dropzone -->
+              <div class="upload-dropzone" id="videoDropzone">
+                <i class="fa-solid fa-film dropzone-icon"></i>
+                <p>Drag & drop videos here or <strong>browse files</strong></p>
+                <span class="dropzone-hint">MP4 recommended &middot; max 3 videos, up to 1GB each</span>
+                <input type="file" id="prodVideosInput" multiple accept="video/mp4,video/quicktime,video/webm" style="display:none;">
+              </div>
+
+              <!-- New Selected Videos -->
+              <div id="newVideosPreview" class="video-list mt-2"></div>
+
+              <!-- Upload progress -->
+              <div id="uploadProgressWrap" class="upload-progress" style="display:none;">
+                <div class="upload-progress-bar"><div id="uploadProgressFill"></div></div>
+                <span id="uploadProgressText">0%</span>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="dashboard.closeModal('productModal')">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveProductBtn">
+              <span class="btn-text">Save Product</span>
+              <span class="spinner" style="display:none;"><i class="fa-solid fa-circle-notch fa-spin"></i> Saving...</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD / EDIT CATEGORY -->
+  <div id="categoryModal" class="modal-backdrop">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="categoryModalTitle">Add New Category</h3>
+          <button class="modal-close" onclick="dashboard.closeModal('categoryModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <form id="categoryForm">
+          <input type="hidden" id="catFormId">
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="catNameEn">Category Name (English) <span class="required">*</span></label>
+              <input type="text" id="catNameEn" required placeholder="e.g. Thermal Printers">
+            </div>
+
+            <div class="form-group">
+              <label for="catNameKm">Category Name (Khmer) <span class="khmer-label">ឈ្មោះជាភាសាខ្មែរ</span></label>
+              <input type="text" id="catNameKm" placeholder="e.g. ម៉ាស៊ីនព្រីនកម្ដៅ">
+            </div>
+
+            <div class="form-group">
+              <label for="catDescEn">Description (English)</label>
+              <textarea id="catDescEn" rows="2" placeholder="Category description..."></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="catDescKm">Description (Khmer) <span class="khmer-label">ការពិពណ៌នាជាភាសាខ្មែរ</span></label>
+              <textarea id="catDescKm" rows="2" placeholder="ការពិពណ៌នាប្រភេទ..."></textarea>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="dashboard.closeModal('categoryModal')">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveCategoryBtn">Save Category</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: VIEW CATEGORY PRODUCTS -->
+  <div id="categoryProductsModal" class="modal-backdrop">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="categoryProductsTitle">Category Products</h3>
+          <button class="modal-close" onclick="dashboard.closeModal('categoryProductsModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Name</th>
+                  <th>Price</th>
+                  <th>Stock</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="categoryProductsBody">
+                <tr><td colspan="5" class="text-center py-3">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="dashboard.closeModal('categoryProductsModal')">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CONFIRM DELETE -->
+  <div id="confirmModal" class="modal-backdrop">
+    <div class="modal-dialog modal-sm">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="confirmModalTitle">Confirm Action</h3>
+          <button class="modal-close" onclick="dashboard.closeModal('confirmModal')"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <p id="confirmModalMessage">Are you sure you want to proceed?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="dashboard.closeModal('confirmModal')">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmModalBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="/public/js/dashboard.js"></script>
+</body>
+</html>

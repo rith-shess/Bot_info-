@@ -1,0 +1,15 @@
+node_modules/
+.env
+.DS_Store
+Thumbs.db
+npm-debug.log*
+
+# Database (contains admin password hash and customer data)
+data/*
+!data/.gitkeep
+
+# Uploaded product pictures and videos (videos can be up to 1GB each)
+uploads/products/*
+!uploads/products/.gitkeep
+uploads/videos/*
+!uploads/videos/.gitkeep
