@@ -9,6 +9,8 @@ const { testProducts } = require('./product.test');
 const { testSearch } = require('./search.test');
 const { testTelegram } = require('./telegram.test');
 const { testPersistence } = require('./persistence.test');
+const { testYouTube } = require('./youtube.test');
+const { testBackup } = require('./backup.test');
 
 async function runAllTests() {
   console.log('====================================================');
@@ -25,6 +27,10 @@ async function runAllTests() {
     testSearch();
     console.log('');
     await testTelegram();
+    console.log('');
+    testYouTube();
+    console.log('');
+    testBackup();
     console.log('');
     testPersistence();
 

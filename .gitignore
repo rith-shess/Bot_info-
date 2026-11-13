@@ -8,7 +8,7 @@ npm-debug.log*
 data/*
 !data/.gitkeep
 
-# Uploaded product pictures and videos (videos can be up to 1GB each)
+# Uploaded product pictures
 uploads/products/*
 !uploads/products/.gitkeep
 uploads/videos/*

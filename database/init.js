@@ -11,6 +11,13 @@ function initDatabase() {
   // Execute schema
   db.exec(schemaSql);
 
+  // Databases created before the YouTube link feature don't have the video_url column yet
+  const productColumns = db.prepare('PRAGMA table_info(products)').all().map(c => c.name);
+  if (!productColumns.includes('video_url')) {
+    db.exec('ALTER TABLE products ADD COLUMN video_url TEXT');
+    console.log('[Database] Added products.video_url column.');
+  }
+
   // Check and seed default admin from environment
   const adminCheck = db.prepare('SELECT id FROM admins WHERE username = ?').get(config.adminUsername);
   if (!adminCheck) {

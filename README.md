@@ -396,22 +396,15 @@ telegram-bot/
 
 Notes
 - Only **one** copy of the bot can run per token. Stop the bot on your own computer (or use a second token for testing) once Railway is running it.
-- Railway closes an upload that takes longer than about 5 minutes, so very large videos need a fast connection. Videos under ~49MB also play directly inside Telegram.
 
 ---
 
-## 🎬 Product Videos
+## 🎬 Product Video (YouTube link)
 
-In the dashboard, **Add/Edit Product** has a *Product Videos* section: MP4 (recommended), MOV or WEBM, **up to 1GB each, 3 videos per upload**, with a live upload progress bar. The limit can be changed with `MAX_VIDEO_MB` in `.env`.
+In the dashboard, **Add/Edit Product** has a **YouTube Video Link** field (optional). Upload your video to YouTube first (it can be *Unlisted*), then paste the link there. Normal links, `youtu.be` short links, Shorts and playlists are accepted.
 
-In Telegram, products with videos show a **🎬 Watch Video** button above **🛒 Buy Now**.
+In Telegram, products with a link show a **▶️ Watch Video on YouTube** button above **🛒 Buy Now**. Tapping it opens the video on YouTube. Leave the field empty and the button is not shown.
 
-| Video size | What the customer gets |
-|------------|------------------------|
-| up to ~49MB | The video plays inside the chat (uploaded once, then sent instantly) |
-| over 49MB | Telegram bots cannot upload files over 50MB, so the customer gets a **▶️ Watch Video** link. This needs a **public https** `BASE_URL` in `.env` (for example `https://shop.example.com`). With `http://localhost` the customer is told to contact sales instead. |
-
-Tip: compress long videos to under 49MB (for example with HandBrake) if you want them to play directly in the chat.
 
 ---
 

@@ -7,19 +7,13 @@ function errorHandler(err, req, res, next) {
     if (err.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({
         success: false,
-        message: 'File too large. Images: max 5MB. Videos: max 1GB.'
+        message: 'File too large. Maximum image size is 5MB.'
       });
     }
     if (err.code === 'LIMIT_FILE_COUNT') {
       return res.status(400).json({
         success: false,
-        message: 'Too many files uploaded at once. Maximum is 10 images and 3 videos.'
-      });
-    }
-    if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-      return res.status(400).json({
-        success: false,
-        message: 'Too many files selected. Maximum is 10 pictures and 3 videos at once.'
+        message: 'Too many files uploaded at once. Maximum is 10 images.'
       });
     }
     return res.status(400).json({

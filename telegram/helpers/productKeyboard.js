@@ -2,6 +2,7 @@ const { Markup } = require('telegraf');
 const settingsService = require('../../services/settingsService');
 const { getMsg } = require('../messages/i18n');
 const productService = require('../../services/productService');
+const { normalizeYouTubeUrl } = require('../../utils/youtube');
 
 const DEFAULT_SALES_HANDLE = 'Skybalsupport';
 
@@ -33,27 +34,26 @@ function buildBuyUrl(product, lang) {
 }
 
 /**
- * Inline keyboard for a product page: a single [Buy Now] button.
+ * Inline keyboard for a product page: [Watch Video] (only if the product has a YouTube link) + [Buy Now].
  * Tapping it sends the product picture + details to the sales account
  * (see handleBuyNow) and offers a direct chat link to the customer.
  */
 function buildProductKeyboard(product, lang) {
   const i18n = getMsg(lang);
-  const videos = product.videos || productService.getVideosByProductId(product.id);
   const rows = [];
-  if (videos && videos.length > 0) {
-    rows.push([Markup.button.callback(i18n.btnWatchVideo, `prod_video_${product.id}`)]);
-  }
-  rows.push([Markup.button.callback(i18n.btnBuyNow, `buy_now_${product.id}`)]);
-  return Markup.inlineKeyboard(rows);
-}
 
-/** Just the Buy Now button (attached under videos) */
-function buildBuyOnlyKeyboard(product, lang) {
-  const i18n = getMsg(lang);
-  return Markup.inlineKeyboard([
-    [Markup.button.callback(i18n.btnBuyNow, `buy_now_${product.id}`)]
-  ]);
+  // Optional YouTube link: the button simply opens the video on YouTube
+  const storedUrl = product.video_url !== undefined
+    ? product.video_url
+    : (productService.getProductById(product.id) || {}).video_url;
+  const videoUrl = normalizeYouTubeUrl(storedUrl);
+  if (videoUrl) {
+    rows.push([Markup.button.url(i18n.btnWatchVideo, videoUrl)]);
+  }
+
+  rows.push([Markup.button.callback(i18n.btnBuyNow, `buy_now_${product.id}`)]);
+  rows.push([Markup.button.callback(i18n.btnBackToProducts, 'cmd_products_1')]);
+  return Markup.inlineKeyboard(rows);
 }
 
 /**
@@ -67,4 +67,4 @@ function buildChatKeyboard(product, lang) {
   ]);
 }
 
-module.exports = { buildProductKeyboard, buildBuyOnlyKeyboard, buildChatKeyboard, buildBuyUrl, getSalesHandle };
+module.exports = { buildProductKeyboard, buildChatKeyboard, buildBuyUrl, getSalesHandle };

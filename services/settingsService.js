@@ -2,9 +2,9 @@ const db = require('../database');
 
 const DEFAULT_SETTINGS = {
   contact_phone: '+855 12 345 678 / +855 98 765 432',
-  contact_telegram: '@AdminSupport',
+  contact_telegram: '@Skybalsupport',
   sales_telegram: '@Skybalsupport',
-  contact_sales: '@inforpos',
+  contact_sales: '@infopos092',
   sales_chat_id: '',
   sales_chat_auto: '',
   contact_address_en: 'Phnom Penh, Cambodia',

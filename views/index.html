@@ -377,6 +377,26 @@
               </div>
             </form>
           </div>
+
+          <div class="card" style="margin-top: 1.5rem;">
+            <div class="card-header">
+              <div class="card-title">
+                <i class="fa-solid fa-database"></i>
+                <h3>Backup & Restore</h3>
+              </div>
+            </div>
+            <div style="padding: 1.5rem;">
+              <p class="text-muted" style="font-size: 0.9rem;">
+                Download a backup (.zip) of your products, categories, pictures and settings. Use <strong>Restore Backup</strong> to load one, for example to move your data from your computer to Railway.
+                Restoring <strong>replaces</strong> the current products, categories and settings. The admin login is not changed.
+              </p>
+              <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1rem;">
+                <button type="button" class="btn btn-secondary" id="downloadBackupBtn"><i class="fa-solid fa-download"></i> Download Backup</button>
+                <input type="file" id="restoreBackupInput" accept=".zip,application/zip" style="display:none;">
+                <button type="button" class="btn btn-primary" id="restoreBackupBtn"><i class="fa-solid fa-upload"></i> Restore Backup...</button>
+              </div>
+            </div>
+          </div>
         </section>
 
       </main>
@@ -477,6 +497,13 @@
               </div>
             </div>
 
+            <!-- YouTube Video Link -->
+            <div class="form-group">
+              <label for="prodVideoUrl">YouTube Video Link <span class="khmer-label">(optional)</span></label>
+              <input type="text" id="prodVideoUrl" inputmode="url" placeholder="https://www.youtube.com/watch?v=...">
+              <small class="text-muted">Customers tap "Watch Video" in Telegram to watch it on YouTube. Upload the video to YouTube first (it can be Unlisted), then paste the link here. Leave empty for no video.</small>
+            </div>
+
             <!-- Images Section -->
             <div class="form-group">
               <label>Product Pictures (Multiple allowed - JPEG, PNG, WEBP)</label>
@@ -497,33 +524,6 @@
 
               <!-- New Selected Files Preview -->
               <div id="newImagesPreview" class="images-preview-flex mt-2"></div>
-            </div>
-
-            <div class="form-group">
-              <label>Product Videos (MP4, MOV, WEBM - up to 1GB each)</label>
-
-              <!-- Existing Videos (When Editing) -->
-              <div id="existingVideosContainer" class="existing-images-grid" style="display:none;">
-                <label class="sub-label">Current Videos (Click red trash to remove):</label>
-                <div id="existingVideosList" class="video-list"></div>
-              </div>
-
-              <!-- Video Dropzone -->
-              <div class="upload-dropzone" id="videoDropzone">
-                <i class="fa-solid fa-film dropzone-icon"></i>
-                <p>Drag & drop videos here or <strong>browse files</strong></p>
-                <span class="dropzone-hint">MP4 recommended &middot; max 3 videos, up to 1GB each</span>
-                <input type="file" id="prodVideosInput" multiple accept="video/mp4,video/quicktime,video/webm" style="display:none;">
-              </div>
-
-              <!-- New Selected Videos -->
-              <div id="newVideosPreview" class="video-list mt-2"></div>
-
-              <!-- Upload progress -->
-              <div id="uploadProgressWrap" class="upload-progress" style="display:none;">
-                <div class="upload-progress-bar"><div id="uploadProgressFill"></div></div>
-                <span id="uploadProgressText">0%</span>
-              </div>
             </div>
 
           </div>

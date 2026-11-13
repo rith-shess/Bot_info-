@@ -4,16 +4,13 @@ const telegramUserService = require('../../services/telegramUserService');
 const categoryService = require('../../services/categoryService');
 const productService = require('../../services/productService');
 const { sendProductInfo } = require('../helpers/mediaSender');
-const { buildProductKeyboard, buildBuyOnlyKeyboard, buildChatKeyboard } = require('../helpers/productKeyboard');
-const { sendProductVideos } = require('../helpers/videoSender');
+const { buildProductKeyboard, buildChatKeyboard } = require('../helpers/productKeyboard');
 const { notifySales } = require('../helpers/salesNotifier');
+const commandHandlers = require('./commandHandlers');
 
 // Prevents spamming the sales team when a customer taps Buy Now repeatedly
 const BUY_COOLDOWN_MS = 60 * 1000;
 const recentBuyRequests = new Map();
-
-// Videos currently being uploaded (prevents a second tap from starting a second 40MB upload)
-const sendingVideos = new Set();
 
 const actionHandlers = {
   async handleLanguageChange(ctx, chosenLang) {
@@ -21,6 +18,8 @@ const actionHandlers = {
     telegramUserService.setLanguage(ctx.from.id, chosenLang);
     const i18n = getMsg(chosenLang);
     await ctx.reply(i18n.languageChanged, { parse_mode: 'Markdown' });
+    // Show home page again after language changes
+    await commandHandlers.handleStart(ctx);
   },
 
   async handleProductView(ctx, productId) {
@@ -36,61 +35,6 @@ const actionHandlers = {
     const keyboard = buildProductKeyboard(product, lang);
 
     await sendProductInfo(ctx, product, lang, keyboard.reply_markup);
-  },
-
-  async handleProductVideo(ctx, productId) {
-    ctx.answerCbQuery().catch(() => {});
-    const lang = telegramUserService.getLanguage(ctx.from.id);
-    const i18n = getMsg(lang);
-
-    const product = productService.getProductById(productId);
-    if (!product || product.is_active === 0) {
-      return ctx.reply(i18n.notFound('ID ' + productId));
-    }
-    if (!product.videos || product.videos.length === 0) {
-      return ctx.reply(i18n.noVideos);
-    }
-
-    const sendKey = `${ctx.from.id}:${productId}`;
-    if (sendingVideos.has(sendKey)) {
-      return ctx.reply(i18n.videoSending);
-    }
-    sendingVideos.add(sendKey);
-
-    // A video that is not on Telegram yet must be uploaded first (can take a while): tell the customer
-    const needsUpload = product.videos.some(v => !v.telegram_file_id);
-    let waitMsg = null;
-    if (needsUpload) {
-      waitMsg = await ctx.reply(i18n.videoSending).catch(() => null);
-    }
-    ctx.sendChatAction('upload_video').catch(() => {});
-    const keepAlive = setInterval(() => ctx.sendChatAction('upload_video').catch(() => {}), 4000);
-
-    const buyKeyboard = buildBuyOnlyKeyboard(product, lang);
-    let result;
-    try {
-      result = await sendProductVideos(ctx, product, lang, buyKeyboard.reply_markup);
-    } finally {
-      clearInterval(keepAlive);
-      sendingVideos.delete(sendKey);
-      if (waitMsg && waitMsg.message_id && ctx.chat) {
-        ctx.telegram.deleteMessage(ctx.chat.id, waitMsg.message_id).catch(() => {});
-      }
-    }
-
-    // Videos too big for Telegram's bot upload limit: offer a link to watch them
-    if (result.links.length > 0) {
-      const rows = result.links.map((item, idx) => [
-        Markup.button.url(`▶️ ${i18n.btnWatchVideo} ${result.links.length > 1 ? idx + 1 : ''}`.trim(), item.url)
-      ]);
-      rows.push([Markup.button.callback(i18n.btnBuyNow, `buy_now_${product.id}`)]);
-      await ctx.reply(i18n.videoLargeLink, Markup.inlineKeyboard(rows));
-    }
-
-    // Could not deliver at all: be honest and point to the sales team
-    if (result.tooLarge.length > 0 || (result.sent === 0 && result.links.length === 0 && result.failed.length > 0)) {
-      await ctx.reply(i18n.videoUnavailable, buildChatKeyboard(product, lang));
-    }
   },
 
   async handleBuyNow(ctx, productId) {

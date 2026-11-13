@@ -1,11 +1,6 @@
 const productService = require('../services/productService');
 const upload = require('../middleware/upload');
-
-// Files uploaded by multer.fields(): { images: [...], videos: [...] }
-function splitFiles(req) {
-  const files = req.files || {};
-  return { images: files.images || [], videos: files.videos || [] };
-}
+const { normalizeYouTubeUrl } = require('../utils/youtube');
 
 // Accepts an array, a JSON array string or a single id
 function parseIdList(value) {
@@ -100,7 +95,8 @@ const productController = {
         currency,
         category_id,
         stock_status,
-        is_active
+        is_active,
+        video_url
       } = req.body;
 
       if (!sku || !sku.trim()) {
@@ -110,6 +106,16 @@ const productController = {
       if (!name_en || !name_en.trim()) {
         upload.removeUploadedFiles(req.files);
         return res.status(400).json({ success: false, message: 'Product name in English is required.' });
+      }
+
+      // YouTube link (optional)
+      let videoUrl = null;
+      if (video_url && String(video_url).trim()) {
+        videoUrl = normalizeYouTubeUrl(video_url);
+        if (!videoUrl) {
+          upload.removeUploadedFiles(req.files);
+          return res.status(400).json({ success: false, message: 'Please enter a valid YouTube link (for example https://www.youtube.com/watch?v=...).' });
+        }
       }
 
       // Check duplicate SKU
@@ -132,10 +138,10 @@ const productController = {
           currency: currency || 'USD',
           category_id: category_id ? parseInt(category_id, 10) : null,
           stock_status: stock_status || 'in_stock',
-          is_active: is_active !== undefined ? parseInt(is_active, 10) : 1
+          is_active: is_active !== undefined ? parseInt(is_active, 10) : 1,
+          video_url: videoUrl
         },
-        splitFiles(req).images,
-        splitFiles(req).videos
+        req.files || []
       );
 
       return res.status(201).json({
@@ -175,7 +181,7 @@ const productController = {
         stock_status,
         is_active,
         remove_images,
-        remove_videos
+        video_url
       } = req.body;
 
       // Check duplicate SKU if changed
@@ -187,8 +193,21 @@ const productController = {
         }
       }
 
+      // YouTube link: undefined = leave as is, empty = remove the link
+      let videoUrl;
+      if (video_url !== undefined) {
+        if (String(video_url).trim() === '') {
+          videoUrl = '';
+        } else {
+          videoUrl = normalizeYouTubeUrl(video_url);
+          if (!videoUrl) {
+            upload.removeUploadedFiles(req.files);
+            return res.status(400).json({ success: false, message: 'Please enter a valid YouTube link (for example https://www.youtube.com/watch?v=...).' });
+          }
+        }
+      }
+
       const removeImageIds = parseIdList(remove_images);
-      const removeVideoIds = parseIdList(remove_videos);
 
       const updated = productService.updateProduct(
         id,
@@ -204,12 +223,11 @@ const productController = {
           currency,
           category_id,
           stock_status,
-          is_active
+          is_active,
+          video_url: videoUrl
         },
-        splitFiles(req).images,
-        removeImageIds,
-        splitFiles(req).videos,
-        removeVideoIds
+        req.files || [],
+        removeImageIds
       );
 
       return res.json({
@@ -237,7 +255,7 @@ const productController = {
 
       return res.json({
         success: true,
-        message: 'Product and associated pictures and videos deleted successfully.'
+        message: 'Product and associated pictures deleted successfully.'
       });
     } catch (error) {
       console.error('Error deleting product:', error);

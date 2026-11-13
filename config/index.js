@@ -10,7 +10,7 @@ dotenv.config();
 const storageRoot = process.env.DATA_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH || '';
 const isRailway = !!(process.env.RAILWAY_SERVICE_ID || process.env.RAILWAY_ENVIRONMENT_NAME || process.env.RAILWAY_ENVIRONMENT_ID);
 
-// Public address of the site (used for links to large videos)
+// Public address of the site
 function resolveBaseUrl() {
   const configured = (process.env.BASE_URL || '').trim();
   const looksLocal = /^https?:\/\/(localhost|127\.0\.0\.1)/i.test(configured);
@@ -32,18 +32,13 @@ const config = {
     root: path.resolve(__dirname, '..'),
     data: storageRoot ? path.resolve(storageRoot) : path.resolve(__dirname, '..', 'data'),
     uploads: storageRoot ? path.join(path.resolve(storageRoot), 'uploads', 'products') : path.resolve(__dirname, '..', 'uploads', 'products'),
-    videos: storageRoot ? path.join(path.resolve(storageRoot), 'uploads', 'videos') : path.resolve(__dirname, '..', 'uploads', 'videos'),
     public: path.resolve(__dirname, '..', 'public'),
     views: path.resolve(__dirname, '..', 'views')
   },
   upload: {
     maxFileSize: 5 * 1024 * 1024, // 5MB per image
     maxFiles: 10,
-    allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
-    // Videos (MAX_VIDEO_MB in .env can change the 1 GB default)
-    maxVideoSize: (parseInt(process.env.MAX_VIDEO_MB, 10) || 1024) * 1024 * 1024,
-    maxVideos: 3,
-    allowedVideoMimeTypes: ['video/mp4', 'video/quicktime', 'video/webm']
+    allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
   }
 };
 

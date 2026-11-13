@@ -4,7 +4,6 @@ const commandHandlers = require('./handlers/commandHandlers');
 const actionHandlers = require('./handlers/actionHandlers');
 const messageHandlers = require('./handlers/messageHandlers');
 const { registerIfSales, getSalesChatId } = require('./helpers/salesNotifier');
-const { isPublicBaseUrl } = require('./helpers/videoSender');
 
 let bot = null;
 let botStatus = {
@@ -29,8 +28,7 @@ function initBot() {
   }
 
   try {
-    // handlerTimeout: Telegraf's default (90s) would abandon a slow video upload
-    bot = new Telegraf(config.botToken, { handlerTimeout: 30 * 60 * 1000 });
+    bot = new Telegraf(config.botToken);
 
     // Global middleware: Instantly dismiss callback button spinners on Telegram client
     bot.use(async (ctx, next) => {
@@ -62,11 +60,6 @@ function initBot() {
     // Action handlers (Inline keyboards)
     bot.action('set_lang_en', ctx => actionHandlers.handleLanguageChange(ctx, 'en'));
     bot.action('set_lang_km', ctx => actionHandlers.handleLanguageChange(ctx, 'km'));
-
-    bot.action(/^prod_video_(\d+)$/, ctx => {
-      const prodId = parseInt(ctx.match[1], 10);
-      return actionHandlers.handleProductVideo(ctx, prodId);
-    });
 
     bot.action(/^buy_now_(\d+)$/, ctx => {
       const prodId = parseInt(ctx.match[1], 10);
@@ -132,9 +125,6 @@ async function startBot() {
     try {
       const { getSalesHandle } = require('./helpers/productKeyboard');
       console.log(`[Telegram] Buy Now button ACTIVE -> sales account @${getSalesHandle()}`);
-      if (!isPublicBaseUrl()) {
-        console.warn('[Telegram] BASE_URL is not a public https address: product videos over 49MB cannot be opened by customers. Set BASE_URL=https://your-domain in .env (small videos still work).');
-      }
       if (getSalesChatId()) {
         console.log('[Telegram] Sales notifications READY (product pictures will be sent to the sales chat).');
       } else {

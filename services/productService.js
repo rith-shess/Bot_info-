@@ -108,12 +108,7 @@ const productService = {
     if (!product) return null;
 
     product.images = db.prepare('SELECT * FROM product_images WHERE product_id = ? ORDER BY display_order ASC, id ASC').all(id);
-    product.videos = this.getVideosByProductId(id);
     return product;
-  },
-
-  getVideosByProductId(productId) {
-    return db.prepare('SELECT * FROM product_videos WHERE product_id = ? ORDER BY display_order ASC, id ASC').all(productId);
   },
 
   getProductBySku(sku) {
@@ -126,17 +121,16 @@ const productService = {
 
     if (!product) return null;
     product.images = db.prepare('SELECT * FROM product_images WHERE product_id = ? ORDER BY display_order ASC, id ASC').all(product.id);
-    product.videos = this.getVideosByProductId(product.id);
     return product;
   },
 
-  createProduct(data, files = [], videoFiles = []) {
+  createProduct(data, files = []) {
     const stmt = db.prepare(`
       INSERT INTO products (
         sku, name_en, name_km, description_en, description_km,
         details_en, details_km, price, currency, category_id,
-        stock_status, is_active, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        stock_status, is_active, video_url, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `);
 
     const result = stmt.run(
@@ -151,7 +145,8 @@ const productService = {
       data.currency || 'USD',
       data.category_id ? parseInt(data.category_id, 10) : null,
       data.stock_status || 'in_stock',
-      data.is_active !== undefined ? parseInt(data.is_active, 10) : 1
+      data.is_active !== undefined ? parseInt(data.is_active, 10) : 1,
+      data.video_url ? String(data.video_url).trim() : null
     );
 
     const productId = result.lastInsertRowid;
@@ -167,37 +162,11 @@ const productService = {
       });
     }
 
-    this._insertVideos(productId, videoFiles, 0);
 
     return this.getProductById(productId);
   },
 
-  _insertVideos(productId, videoFiles, startOrder) {
-    if (!videoFiles || videoFiles.length === 0) return;
-    const vidInsert = db.prepare(`
-      INSERT INTO product_videos (product_id, file_path, original_name, file_size, mime_type, display_order)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `);
-    let order = startOrder;
-    videoFiles.forEach(file => {
-      vidInsert.run(productId, file.filename, file.originalname, file.size, file.mimetype, order++);
-    });
-  },
-
-  _removeVideoRecords(productId, videoIds) {
-    (videoIds || []).forEach(videoId => {
-      const vid = db.prepare('SELECT * FROM product_videos WHERE id = ? AND product_id = ?').get(videoId, productId);
-      if (vid) {
-        const filePath = path.join(config.paths.videos, vid.file_path);
-        if (fs.existsSync(filePath)) {
-          try { fs.unlinkSync(filePath); } catch (e) { /* ignore */ }
-        }
-        db.prepare('DELETE FROM product_videos WHERE id = ?').run(videoId);
-      }
-    });
-  },
-
-  updateProduct(id, data, newFiles = [], removeImageIds = [], newVideoFiles = [], removeVideoIds = []) {
+  updateProduct(id, data, newFiles = [], removeImageIds = []) {
     const existing = this.getProductById(id);
     if (!existing) return null;
 
@@ -215,6 +184,7 @@ const productService = {
         category_id = ?,
         stock_status = ?,
         is_active = ?,
+        video_url = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `);
@@ -232,6 +202,7 @@ const productService = {
       data.category_id !== undefined ? (data.category_id ? parseInt(data.category_id, 10) : null) : existing.category_id,
       data.stock_status || existing.stock_status,
       data.is_active !== undefined ? parseInt(data.is_active, 10) : existing.is_active,
+      data.video_url !== undefined ? (String(data.video_url).trim() || null) : existing.video_url,
       id
     );
 
@@ -263,13 +234,6 @@ const productService = {
       });
     }
 
-    // Videos: remove selected, then append new ones
-    this._removeVideoRecords(id, removeVideoIds);
-    if (newVideoFiles && newVideoFiles.length > 0) {
-      const maxVid = db.prepare('SELECT MAX(display_order) as maxOrder FROM product_videos WHERE product_id = ?').get(id);
-      this._insertVideos(id, newVideoFiles, (maxVid && maxVid.maxOrder !== null ? maxVid.maxOrder : -1) + 1);
-    }
-
     return this.getProductById(id);
   },
 
@@ -287,9 +251,6 @@ const productService = {
       });
     }
 
-    // Delete video files from disk
-    this._removeVideoRecords(id, (product.videos || []).map(v => v.id));
-
     // Cascade delete in DB
     db.prepare('DELETE FROM product_images WHERE product_id = ?').run(id);
     const result = db.prepare('DELETE FROM products WHERE id = ?').run(id);
@@ -302,10 +263,6 @@ const productService = {
     const newStatus = product.is_active === 1 ? 0 : 1;
     db.prepare('UPDATE products SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(newStatus, id);
     return this.getProductById(id);
-  },
-
-  saveTelegramVideoFileId(videoId, telegramFileId) {
-    db.prepare('UPDATE product_videos SET telegram_file_id = ? WHERE id = ?').run(telegramFileId, videoId);
   },
 
   saveTelegramFileId(imageId, telegramFileId) {

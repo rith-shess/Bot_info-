@@ -10,10 +10,6 @@ const dashboard = {
   productsTotalPages: 1,
   selectedFiles: [],
   imagesToRemove: [],
-  selectedVideos: [],
-  videosToRemove: [],
-  MAX_VIDEO_BYTES: 1024 * 1024 * 1024, // 1GB
-  MAX_VIDEOS: 3,
   confirmCallback: null,
 
   init() {
@@ -99,6 +95,23 @@ const dashboard = {
     // Forms Submissions
     document.getElementById('productForm').addEventListener('submit', (e) => this.handleProductSubmit(e));
     document.getElementById('categoryForm').addEventListener('submit', (e) => this.handleCategorySubmit(e));
+    // Backup & Restore
+    const downloadBackupBtn = document.getElementById('downloadBackupBtn');
+    const restoreBackupBtn = document.getElementById('restoreBackupBtn');
+    const restoreBackupInput = document.getElementById('restoreBackupInput');
+    if (downloadBackupBtn) {
+      downloadBackupBtn.addEventListener('click', () => { window.location.href = '/api/backup/download'; });
+    }
+    if (restoreBackupBtn && restoreBackupInput) {
+      restoreBackupBtn.addEventListener('click', () => restoreBackupInput.click());
+      restoreBackupInput.addEventListener('change', () => {
+        if (restoreBackupInput.files && restoreBackupInput.files[0]) {
+          this.handleRestoreBackup(restoreBackupInput.files[0]);
+        }
+        restoreBackupInput.value = '';
+      });
+    }
+
     const settingsForm = document.getElementById('settingsForm');
     if (settingsForm) {
       settingsForm.addEventListener('submit', (e) => this.handleSettingsSubmit(e));
@@ -114,7 +127,6 @@ const dashboard = {
 
     // Image Upload Dropzone Setup
     this.setupDropzone();
-    this.setupVideoDropzone();
   },
 
   setupDropzone() {
@@ -144,126 +156,6 @@ const dashboard = {
       if (fileInput.files && fileInput.files.length > 0) {
         this.appendNewFiles(Array.from(fileInput.files));
       }
-    });
-  },
-
-  setupVideoDropzone() {
-    const dropzone = document.getElementById('videoDropzone');
-    const input = document.getElementById('prodVideosInput');
-    if (!dropzone || !input) return;
-
-    dropzone.addEventListener('click', () => input.click());
-    dropzone.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      dropzone.classList.add('dragover');
-    });
-    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
-    dropzone.addEventListener('drop', (e) => {
-      e.preventDefault();
-      dropzone.classList.remove('dragover');
-      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-        this.appendNewVideos(Array.from(e.dataTransfer.files));
-      }
-    });
-    input.addEventListener('change', () => {
-      if (input.files && input.files.length > 0) {
-        this.appendNewVideos(Array.from(input.files));
-      }
-      input.value = ''; // allow picking the same file again
-    });
-  },
-
-  formatBytes(bytes) {
-    if (bytes >= 1024 * 1024 * 1024) return (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
-    if (bytes >= 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + ' MB';
-    return Math.max(1, Math.round(bytes / 1024)) + ' KB';
-  },
-
-  appendNewVideos(files) {
-    const allowed = ['video/mp4', 'video/quicktime', 'video/webm'];
-    for (const file of files) {
-      if (!allowed.includes(file.type)) {
-        this.showToast(`"${file.name}" skipped: only MP4, MOV and WEBM videos are allowed.`, 'warning');
-        continue;
-      }
-      if (file.size > this.MAX_VIDEO_BYTES) {
-        this.showToast(`"${file.name}" skipped: ${this.formatBytes(file.size)} is over the 1GB limit.`, 'error');
-        continue;
-      }
-      if (this.selectedVideos.length >= this.MAX_VIDEOS) {
-        this.showToast(`Only ${this.MAX_VIDEOS} videos can be uploaded at once.`, 'warning');
-        break;
-      }
-      this.selectedVideos.push(file);
-    }
-    this.renderNewVideosPreview();
-  },
-
-  renderNewVideosPreview() {
-    const container = document.getElementById('newVideosPreview');
-    if (!container) return;
-    container.innerHTML = '';
-
-    this.selectedVideos.forEach((file, index) => {
-      const row = document.createElement('div');
-      row.className = 'video-item';
-
-      const icon = document.createElement('i');
-      icon.className = 'fa-solid fa-film';
-      row.appendChild(icon);
-
-      const name = document.createElement('span');
-      name.className = 'video-name';
-      name.textContent = file.name;
-      row.appendChild(name);
-
-      const size = document.createElement('span');
-      size.className = 'video-size';
-      size.textContent = this.formatBytes(file.size);
-      row.appendChild(size);
-
-      const rm = document.createElement('button');
-      rm.type = 'button';
-      rm.className = 'video-remove-btn';
-      rm.title = 'Remove video';
-      rm.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-      rm.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.selectedVideos.splice(index, 1);
-        this.renderNewVideosPreview();
-      });
-      row.appendChild(rm);
-
-      container.appendChild(row);
-    });
-  },
-
-  markVideoForRemoval(videoId) {
-    if (!this.videosToRemove.includes(videoId)) {
-      this.videosToRemove.push(videoId);
-    }
-    const elem = document.getElementById(`existing-vid-${videoId}`);
-    if (elem) elem.remove();
-  },
-
-  // Sends the product form with real upload progress (fetch cannot report upload progress)
-  sendProductForm(url, method, formData, onProgress) {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.open(method, url);
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable && typeof onProgress === 'function') {
-          onProgress(Math.round((e.loaded / e.total) * 100));
-        }
-      };
-      xhr.onload = () => {
-        let json = null;
-        try { json = JSON.parse(xhr.responseText); } catch (err) { /* not JSON */ }
-        resolve({ status: xhr.status, json });
-      };
-      xhr.onerror = () => reject(new Error('Network error'));
-      xhr.ontimeout = () => reject(new Error('Timeout'));
-      xhr.send(formData);
     });
   },
 
@@ -576,16 +468,7 @@ const dashboard = {
     form.reset();
     this.selectedFiles = [];
     this.imagesToRemove = [];
-    this.selectedVideos = [];
-    this.videosToRemove = [];
     this.renderNewImagesPreview();
-    this.renderNewVideosPreview();
-    const progressWrap = document.getElementById('uploadProgressWrap');
-    if (progressWrap) progressWrap.style.display = 'none';
-    const existingVidBox = document.getElementById('existingVideosContainer');
-    const existingVidList = document.getElementById('existingVideosList');
-    if (existingVidBox) existingVidBox.style.display = 'none';
-    if (existingVidList) existingVidList.innerHTML = '';
 
     // Populate category dropdown
     const catSelect = document.getElementById('prodCategory');
@@ -611,6 +494,7 @@ const dashboard = {
       document.getElementById('prodDescKm').value = product.description_km || '';
       document.getElementById('prodDetailsEn').value = product.details_en || '';
       document.getElementById('prodDetailsKm').value = product.details_km || '';
+      document.getElementById('prodVideoUrl').value = product.video_url || '';
 
       if (product.images && product.images.length > 0) {
         existingContainer.style.display = 'block';
@@ -629,33 +513,11 @@ const dashboard = {
       } else {
         existingContainer.style.display = 'none';
       }
-
-      if (existingVidBox && existingVidList && product.videos && product.videos.length > 0) {
-        existingVidBox.style.display = 'block';
-        product.videos.forEach(vid => {
-          const row = document.createElement('div');
-          row.className = 'video-item';
-          row.id = `existing-vid-${vid.id}`;
-          row.innerHTML = `
-            <i class="fa-solid fa-film"></i>
-            <span class="video-name">${this.escapeHtml(vid.original_name || vid.file_path)}</span>
-            <span class="video-size">${this.formatBytes(vid.file_size || 0)}</span>
-            <a href="/uploads/videos/${encodeURIComponent(vid.file_path)}" target="_blank" rel="noopener">Preview</a>
-          `;
-          const rmBtn = document.createElement('button');
-          rmBtn.type = 'button';
-          rmBtn.className = 'video-remove-btn';
-          rmBtn.title = 'Remove video';
-          rmBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
-          rmBtn.addEventListener('click', () => this.markVideoForRemoval(vid.id));
-          row.appendChild(rmBtn);
-          existingVidList.appendChild(row);
-        });
-      }
     } else {
       document.getElementById('productModalTitle').textContent = 'Add New Product';
       document.getElementById('prodFormId').value = '';
       document.getElementById('prodIsActive').checked = true;
+      document.getElementById('prodVideoUrl').value = '';
       existingContainer.style.display = 'none';
     }
 
@@ -710,6 +572,7 @@ const dashboard = {
     formData.append('description_km', document.getElementById('prodDescKm').value.trim());
     formData.append('details_en', document.getElementById('prodDetailsEn').value.trim());
     formData.append('details_km', document.getElementById('prodDetailsKm').value.trim());
+    formData.append('video_url', document.getElementById('prodVideoUrl').value.trim());
 
     if (isEdit && this.imagesToRemove.length > 0) {
       formData.append('remove_images', JSON.stringify(this.imagesToRemove));
@@ -719,36 +582,17 @@ const dashboard = {
       formData.append('images', file);
     });
 
-    if (isEdit && this.videosToRemove.length > 0) {
-      formData.append('remove_videos', JSON.stringify(this.videosToRemove));
-    }
-    this.selectedVideos.forEach(file => {
-      formData.append('videos', file);
-    });
-
     const url = isEdit ? `/api/products/${id}` : '/api/products';
     const method = isEdit ? 'PUT' : 'POST';
 
-    const progressWrap = document.getElementById('uploadProgressWrap');
-    const progressFill = document.getElementById('uploadProgressFill');
-    const progressText = document.getElementById('uploadProgressText');
-    const hasVideos = this.selectedVideos.length > 0;
-    if (hasVideos && progressWrap) {
-      progressWrap.style.display = 'flex';
-      progressFill.style.width = '0%';
-      progressText.textContent = '0%';
-    }
-
     try {
-      const { json } = await this.sendProductForm(url, method, formData, (pct) => {
-        if (!hasVideos || !progressWrap) return;
-        progressFill.style.width = pct + '%';
-        progressText.textContent = pct >= 100 ? 'Saving...' : pct + '%';
+      const res = await fetch(url, {
+        method: method,
+        body: formData
       });
 
-      if (!json) {
-        this.showToast('The server returned an unexpected response. Please try again.', 'error');
-      } else if (json.success) {
+      const json = await res.json();
+      if (json.success) {
         this.showToast(json.message, 'success');
         this.closeModal('productModal');
         this.loadProducts();
@@ -762,7 +606,6 @@ const dashboard = {
       saveBtn.disabled = false;
       btnText.style.display = 'inline-block';
       spinner.style.display = 'none';
-      if (progressWrap) progressWrap.style.display = 'none';
     }
   },
 
@@ -967,6 +810,34 @@ const dashboard = {
   },
 
   /* ================= SETTINGS TAB ================= */
+  async handleRestoreBackup(file) {
+    const ok = window.confirm(
+      `Restore "${file.name}"?\n\nThis REPLACES all current products, categories, pictures and settings with the ones in the backup. The admin login is not changed.`
+    );
+    if (!ok) return;
+
+    const btn = document.getElementById('restoreBackupBtn');
+    if (btn) btn.disabled = true;
+    this.showToast('Restoring backup... please wait.', 'info');
+
+    try {
+      const formData = new FormData();
+      formData.append('backup', file);
+      const res = await fetch('/api/backup/restore', { method: 'POST', body: formData });
+      const json = await res.json();
+      if (json.success) {
+        this.showToast(json.message, 'success');
+        setTimeout(() => window.location.reload(), 1800);
+      } else {
+        this.showToast(json.message || 'Restore failed.', 'error');
+      }
+    } catch (err) {
+      this.showToast('Network error while restoring the backup.', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  },
+
   async loadSettings() {
     try {
       const res = await fetch('/api/settings');

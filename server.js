@@ -60,7 +60,6 @@ app.use(session({
 // Static files
 app.use('/public', express.static(config.paths.public));
 app.use('/uploads/products', express.static(config.paths.uploads));
-app.use('/uploads/videos', express.static(config.paths.videos)); // supports Range requests (video seeking)
 
 // Apply API rate limiting
 app.use('/api/', apiLimiter);
@@ -71,6 +70,7 @@ app.use('/api/dashboard', require('./routes/dashboardRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
+app.use('/api/backup', require('./routes/backupRoutes'));
 
 // Web View Routes (Dashboard and Login pages)
 app.use('/', require('./routes/viewRoutes'));
@@ -92,8 +92,5 @@ const server = app.listen(config.port, () => {
   console.log(`📁 Uploads Directory: ${config.paths.uploads}`);
   console.log(`====================================================`);
 });
-
-// Large video uploads (up to 1GB) can take many minutes: Node's default 5-minute request timeout would cut them off
-server.requestTimeout = 0;
 
 module.exports = { app, server };
